@@ -1,0 +1,4 @@
+.env
+old.py
+*.db
+prompt.txt
