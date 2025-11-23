@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="Kanban App!",
     page_icon="📋",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # CSS Customizado
@@ -467,7 +467,7 @@ def export_to_pdf():
         # Footer
         c.setFont("Helvetica-Oblique", 8)
         c.setFillColorRGB(0.5, 0.5, 0.5)
-        c.drawString(30, 30, "💡 Desenvolvido com Streamlit | 📋 Kanban App 2024")
+        c.drawString(30, 30, "📋 Kanban App! | por Ary Ribeiro: aryribeiro@gmail.com")
         c.drawRightString(page_width - 30, 30, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
         
         c.save()
@@ -550,11 +550,12 @@ def render_post_it(task, column):
         other_columns = [c for c in columns if c != column]
         move_to = st.selectbox(
             "Mover para",
-            ['--'] + other_columns,
-            key=f"move_{task['id']}"
+            ['Mover ←→'] + other_columns,
+            key=f"move_{task['id']}",
+            label_visibility="collapsed"
         )
         
-        if move_to != '--':
+        if move_to != 'Mover ←→':
             task['column'] = move_to
             task['updated_at'] = datetime.now().isoformat()
             db.save_tasks(st.session_state.project_code, st.session_state.tasks)
@@ -619,6 +620,8 @@ def render_kanban_board():
                             
                             st.session_state.tasks.append(new_task)
                             db.save_tasks(st.session_state.project_code, st.session_state.tasks)
+                            # Recarrega do banco para garantir sincronização
+                            st.session_state.tasks = db.load_tasks(st.session_state.project_code)
                             st.session_state[f'creating_in_{column}'] = False
                             st.rerun()
                     
@@ -677,14 +680,23 @@ def render_kanban_board():
 def render_sidebar():
     """Renderiza sidebar com opções"""
     with st.sidebar:
-        st.markdown("### 🎯 Kanban App!")
+        st.markdown("## 📋 Kanban App!")
         
         if st.session_state.project_code:
             st.markdown("---")
             
-            # Botão Administração
-            if st.button("🔐 Administração"):
-                st.session_state.show_admin_panel = not st.session_state.show_admin_panel
+            # Botões Administração e Atualizar lado a lado
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                if st.button("🔐 Administração", key="admin_btn"):
+                    st.session_state.show_admin_panel = not st.session_state.show_admin_panel
+            
+            with col2:
+                if st.button("🔄", help="Atualizar tarefas", key="refresh_btn"):
+                    st.session_state.tasks = db.load_tasks(st.session_state.project_code)
+                    st.toast("✅ Atualizado!", icon="✅")
+                    st.rerun()
             
             if st.session_state.show_admin_panel:
                 password = st.text_input("Senha de Admin", type="password", key="admin_pwd")
@@ -723,17 +735,21 @@ def render_sidebar():
             st.markdown("#### 📤 Carregar JSON")
             uploaded_json = st.file_uploader("Selecione o arquivo JSON", type=['json'], key="json_uploader")
             if uploaded_json is not None:
-                # Verifica se é um novo arquivo
-                file_id = f"{uploaded_json.name}_{uploaded_json.size}"
-                if st.session_state.get('last_json_id') != file_id:
+                # Verifica se é um novo arquivo diferente do último processado
+                file_id = f"{uploaded_json.name}_{uploaded_json.size}_{uploaded_json.file_id if hasattr(uploaded_json, 'file_id') else ''}"
+                
+                # Se não existe last_json_id ou é um arquivo diferente, processa
+                if 'last_json_id' not in st.session_state or st.session_state.get('last_json_id') != file_id:
                     if import_from_json(uploaded_json):
                         st.session_state.last_json_id = file_id
                         st.session_state.json_loaded = True
                         st.success("✅ Projeto carregado com sucesso!")
+                    else:
+                        st.error("❌ Erro ao carregar o arquivo JSON")
             
             # Botão para aplicar o JSON carregado
             if st.session_state.get('json_loaded', False):
-                if st.button("🔄 Aplicar Mudanças", type="primary"):
+                if st.button("🔄 Aplicar Mudanças", type="primary", key="apply_json_btn"):
                     st.session_state.json_loaded = False
                     st.rerun()
             
@@ -760,6 +776,11 @@ def render_sidebar():
                 if st.button("🗑️ Limpar Projeto", type="secondary", disabled=not confirmar):
                     st.session_state.tasks = []
                     db.save_tasks(st.session_state.project_code, st.session_state.tasks)
+                    # Reseta variáveis de controle do JSON para permitir novo upload
+                    if 'last_json_id' in st.session_state:
+                        del st.session_state.last_json_id
+                    if 'json_loaded' in st.session_state:
+                        del st.session_state.json_loaded
                     st.success("✅ Projeto limpo com sucesso!")
                     time.sleep(1)
                     st.rerun()
@@ -791,7 +812,7 @@ def main():
     
     # Se não há projeto ativo, mostra tela de autenticação
     if not st.session_state.project_code:
-        st.markdown('<div class="header-gradient"><h1>📋 Bem-vindo ao Kanban App!</h1><p>Gerencie seus projetos com eficiência</p></div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-gradient"><h1>📋 Kanban App!</h1><p>Gerencie seus projetos com eficiência</p></div>', unsafe_allow_html=True)
         
         tab1, tab2 = st.tabs(["🆕 Criar Novo Projeto", "🔑 Acessar Projeto Existente"])
         
@@ -865,7 +886,39 @@ def main():
         
         # Footer
         st.markdown("---")
-        st.caption("💡 Desenvolvido com Streamlit | 📋 Kanban App 2024")
+        st.caption("📋 Kanban App! | por Ary Ribeiro: aryribeiro@gmail.com")
 
 if __name__ == "__main__":
     main()
+
+st.markdown("""
+<style>
+    .main {
+        background-color: #ffffff;
+        color: #333333;
+    }
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+    }
+    /* Esconde completamente todos os elementos da barra padrão do Streamlit */
+    header {display: none !important;}
+    footer {display: none !important;}
+    #MainMenu {display: none !important;}
+    /* Remove qualquer espaço em branco adicional */
+    div[data-testid="stAppViewBlockContainer"] {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    div[data-testid="stVerticalBlock"] {
+        gap: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    /* Remove quaisquer margens extras */
+    .element-container {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
