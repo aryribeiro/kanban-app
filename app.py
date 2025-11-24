@@ -533,7 +533,7 @@ def render_post_it(task, column):
             📅 Criado: {format_datetime(task['created_at'])}<br>
             ✏️ Editado: {format_datetime(task['updated_at'])}
         </div>
-        <div style="margin-top: 10px; font-weight: bold; font-size: 14px; color: #333; word-wrap: break-word;">
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px; color: #333; word-wrap: break-word;">
             {content}
         </div>
     </div>
@@ -550,12 +550,12 @@ def render_post_it(task, column):
         other_columns = [c for c in columns if c != column]
         move_to = st.selectbox(
             "Mover para",
-            ['Mover ←→'] + other_columns,
+            ['Mover ↔'] + other_columns,
             key=f"move_{task['id']}",
             label_visibility="collapsed"
         )
         
-        if move_to != 'Mover ←→':
+        if move_to != 'Mover ↔':
             task['column'] = move_to
             task['updated_at'] = datetime.now().isoformat()
             db.save_tasks(st.session_state.project_code, st.session_state.tasks)
@@ -680,7 +680,7 @@ def render_kanban_board():
 def render_sidebar():
     """Renderiza sidebar com opções"""
     with st.sidebar:
-        st.markdown("## 📋 Kanban App!")
+        st.markdown("# 📋 Kanban App!")
         
         if st.session_state.project_code:
             st.markdown("---")
@@ -901,10 +901,16 @@ st.markdown("""
         padding-top: 1rem;
         padding-bottom: 0rem;
     }
-    /* Esconde completamente todos os elementos da barra padrão do Streamlit */
-    header {display: none !important;}
-    footer {display: none !important;}
-    #MainMenu {display: none !important;}
+    /* Esconde o menu principal e footer, MAS mantém o botão do sidebar */
+    #MainMenu {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
+    
+    /* Mantém o botão de toggle do sidebar visível */
+    button[kind="header"] {
+        display: block !important;
+        visibility: visible !important;
+    }
+    
     /* Remove qualquer espaço em branco adicional */
     div[data-testid="stAppViewBlockContainer"] {
         padding-top: 0 !important;
@@ -919,6 +925,13 @@ st.markdown("""
     .element-container {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
+    }
+    
+    /* Garante que o header com o botão do sidebar fique visível */
+    header[data-testid="stHeader"] {
+        display: block !important;
+        visibility: visible !important;
+        background-color: transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
