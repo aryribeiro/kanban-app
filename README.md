@@ -1,4 +1,6 @@
 # 📋 Kanban App!
+<img width="1610" height="534" alt="print" src="https://github.com/user-attachments/assets/e0ef9860-1321-4bba-a0f3-79016e3a486b" />
+Obs.: caso o app esteja no modo "sleeping" (dormindo) ao entrar, basta clicar no botão que estará disponível e aguardar, para ativar o mesmo. 
 
 Web app de gerenciamento de projetos / Kanban desenvolvido em Python e Streamlit.
 
@@ -229,5 +231,6 @@ Este é um projeto de código aberto. Sinta-se livre para:
 Livre para uso pessoal e comercial.
 
 ## 🎉 Contato
+
 
 por **Ary Ribeiro**: aryribeiro@gmail.com
